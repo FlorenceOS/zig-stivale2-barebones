@@ -133,11 +133,13 @@ fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path:
             "make -C extern/limine && ",
             "xorriso ",
                 "-as mkisofs ",
-                "-b limine-cd.bin ",
-                "-no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot ",
-                "-e limine-eltorito-efi.bin ",
-                img_dir, " -o ", image_path, " && ",
-            "true"
+                "-b limine-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table ",
+                "-isohybrid-mbr extern/limine/bin/limine-hdd.bin ",
+                "-eltorito-alt-boot -e limine-eltorito-efi.bin -no-emul-boot -isohybrid-gpt-basdat ",
+                img_dir, " -o ", image_path,
+            " && ",
+            "extern/limine/bin/limine-install ", image_path, " && ",
+            "true",
         }) catch unreachable,
     };
 
