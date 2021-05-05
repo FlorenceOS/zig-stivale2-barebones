@@ -134,7 +134,7 @@ fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path:
             "xorriso ",
                 "-as mkisofs ",
                 "-b limine-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table ",
-                "-isohybrid-mbr extern/limine/bin/limine-hdd.bin ",
+                "-part_like_isohybrid ",
                 "-eltorito-alt-boot -e limine-eltorito-efi.bin -no-emul-boot -isohybrid-gpt-basdat ",
                 img_dir, " -o ", image_path,
             " && ",
