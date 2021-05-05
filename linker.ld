@@ -59,13 +59,13 @@ SECTIONS {
   . = ALIGN(64K);
 
   .data . : {
-    __stack_low = .;
-    . += 64K;
-    __stack_high = .;
     *(.data*)
   }:data
 
   .bss . : {
+    __stack_low = .;
+    . += 64K;
+    __stack_high = .;
     *(.bss*)
   }
 }
