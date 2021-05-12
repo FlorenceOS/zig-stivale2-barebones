@@ -128,9 +128,9 @@ fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path:
         std.mem.concat(b.allocator, u8, &[_][]const u8 {
             "rm ", image_path, " || true && ",
             "mkdir -p ", img_dir, "/EFI/BOOT && ",
+            "make -C extern/limine && ",
             "cp ", kernel.getOutputPath(), " extern/limine/bin/limine{-eltorito-efi.bin,-cd.bin,.sys} limine.cfg ", img_dir, " && ",
             "cp extern/limine/bin/BOOTX64.EFI ", img_dir, "/EFI/BOOT/ && ",
-            "make -C extern/limine && ",
             "xorriso ",
                 "-as mkisofs ",
                 "-b limine-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table ",
