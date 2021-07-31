@@ -16,7 +16,7 @@ fn putchar_uart(uart: stivale2.stivale2_struct_tag_mmio32_uart, chr: u8) void {
 
 fn puts_terminal(term: stivale2.stivale2_struct_tag_terminal, str: []const u8) void {
     const write = @intToPtr(fn ([*]const u8, usize) callconv(.C) void, term.term_write);
-    write(@ptrCast([*]const u8, &str[0]), str.len);
+    write(str.ptr, str.len);
 }
 
 pub fn puts(str: []const u8) void {
