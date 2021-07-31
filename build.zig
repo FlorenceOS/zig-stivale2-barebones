@@ -41,7 +41,7 @@ fn baremetal_target(exec: *std.build.LibExeObjStep, arch: std.Target.Cpu.Arch) v
 
 fn stivale2_kernel(b: *Builder, arch: std.Target.Cpu.Arch) *std.build.LibExeObjStep {
     const kernel_filename = b.fmt("kernel_{s}.elf", .{@tagName(arch)});
-    const kernel = b.addExecutable(kernel_filename, "stivale2.zig");
+    const kernel = b.addExecutable(kernel_filename, "kernel/stivale2.zig");
 
     kernel.addIncludeDir("extern/stivale/");
     kernel.setMainPkgPath(".");
@@ -50,7 +50,7 @@ fn stivale2_kernel(b: *Builder, arch: std.Target.Cpu.Arch) *std.build.LibExeObjS
     kernel.install();
 
     baremetal_target(kernel, arch);
-    kernel.setLinkerScriptPath(.{ .path = "linker.ld" });
+    kernel.setLinkerScriptPath(.{ .path = "kernel/linker.ld" });
 
     b.default_step.dependOn(&kernel.step);
 
