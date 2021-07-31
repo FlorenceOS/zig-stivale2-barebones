@@ -17,9 +17,12 @@ SECTIONS {
     QUAD(__stivale2_tags) /* Tags */
   }:none
 
+  . = ALIGN(64K);
+
   .text . : {
     *(.text*)
   }:text
+  
   . = ALIGN(64K);
 
   .rodata . : {

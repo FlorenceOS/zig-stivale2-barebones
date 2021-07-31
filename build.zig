@@ -3,11 +3,11 @@ const Builder = std.build.Builder;
 
 const sabaton = @import("extern/Sabaton/build.zig");
 
-fn baremetal_target(exec: *std.build.LibExeObjStep, arch: std.builtin.Arch) void {
+fn baremetal_target(exec: *std.build.LibExeObjStep, arch: std.Target.Cpu.Arch) void {
     var disabled_features = std.Target.Cpu.Feature.Set.empty;
     var enabled_feautres = std.Target.Cpu.Feature.Set.empty;
 
-    switch(arch) {
+    switch (arch) {
         .x86_64 => {
             const features = std.Target.x86.Feature;
             disabled_features.addFeature(@enumToInt(features.mmx));
@@ -39,7 +39,7 @@ fn baremetal_target(exec: *std.build.LibExeObjStep, arch: std.builtin.Arch) void
     });
 }
 
-fn stivale2_kernel(b: *Builder, arch: std.builtin.Arch) *std.build.LibExeObjStep {
+fn stivale2_kernel(b: *Builder, arch: std.Target.Cpu.Arch) *std.build.LibExeObjStep {
     const kernel_filename = b.fmt("kernel_{s}.elf", .{@tagName(arch)});
     const kernel = b.addExecutable(kernel_filename, "stivale2.zig");
 
@@ -50,7 +50,7 @@ fn stivale2_kernel(b: *Builder, arch: std.builtin.Arch) *std.build.LibExeObjStep
     kernel.install();
 
     baremetal_target(kernel, arch);
-    kernel.setLinkerScriptPath("linker.ld");
+    kernel.setLinkerScriptPath(.{ .path = "linker.ld" });
 
     b.default_step.dependOn(&kernel.step);
 
@@ -58,13 +58,15 @@ fn stivale2_kernel(b: *Builder, arch: std.builtin.Arch) *std.build.LibExeObjStep
 }
 
 fn run_qemu_with_x86_bios_image(b: *Builder, image_path: []const u8) *std.build.RunStep {
-    const cmd = &[_][]const u8 {
+    const cmd = &[_][]const u8{
+        // zig fmt: off
         "qemu-system-x86_64",
         "-cdrom", image_path,
         "-debugcon", "stdio",
         "-vga", "virtio",
         "-m", "4G",
         "-machine", "q35,accel=kvm:whpx:tcg",
+        // zig fmt: on
     };
 
     const run_step = b.addSystemCommand(cmd);
@@ -76,7 +78,8 @@ fn run_qemu_with_x86_bios_image(b: *Builder, image_path: []const u8) *std.build.
 }
 
 fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.RunStep {
-    const cmd = &[_][]const u8 {
+    const cmd = &[_][]const u8{
+        // zig fmt: off
         "qemu-system-x86_64",
         "-cdrom", image_path,
         "-debugcon", "stdio",
@@ -84,6 +87,7 @@ fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.
         "-m", "4G",
         "-machine", "q35,accel=kvm:whpx:tcg",
         "-drive", b.fmt("if=pflash,format=raw,unit=0,file={s},readonly=on", .{std.os.getenv("OVMF_PATH").?}),
+        // zig fmt: on
     };
 
     const run_step = b.addSystemCommand(cmd);
@@ -97,21 +101,25 @@ fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.
 fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.build.RunStep {
     const bootloader = sabaton.build_blob(b, .aarch64, "virt", "extern/Sabaton/") catch unreachable;
 
-    const cmd = &[_][]const u8 {
+    const kernel_path = b.getInstallPath(kernel.install_step.?.dest_dir, kernel.out_filename);
+
+    const cmd = &[_][]const u8{
+        // zig fmt: off
         "qemu-system-aarch64",
         "-M", "virt,accel=kvm:whpx:tcg,gic-version=3",
         "-cpu", "cortex-a57",
         "-drive", b.fmt("if=pflash,format=raw,file={s},readonly=on", .{bootloader.output_path}),
-        "-fw_cfg", b.fmt("opt/Sabaton/kernel,file={s}", .{kernel.getOutputPath()}),
+        "-fw_cfg", b.fmt("opt/Sabaton/kernel,file={s}", .{kernel_path}),
         "-m", "4G",
         "-serial", "stdio",
         "-smp", "4",
         "-device", "ramfb",
+        // zig fmt: on
     };
 
     const run_step = b.addSystemCommand(cmd);
 
-    run_step.step.dependOn(&kernel.step);
+    run_step.step.dependOn(&kernel.install_step.?.step);
     run_step.step.dependOn(&bootloader.step);
 
     const run_command = b.step("run-aarch64", "Run on aarch64 with Sabaton bootloader");
@@ -123,28 +131,33 @@ fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.bui
 fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path: []const u8) *std.build.RunStep {
     const img_dir = b.fmt("{s}/img_dir", .{b.cache_root});
 
-    const cmd = &[_][]const u8 {
+    const cmd = &[_][]const u8{
         "/bin/sh", "-c",
-        std.mem.concat(b.allocator, u8, &[_][]const u8 {
+        std.mem.concat(b.allocator, u8, &[_][]const u8{
+            // zig fmt: off
             "rm ", image_path, " || true && ",
             "mkdir -p ", img_dir, "/EFI/BOOT && ",
             "make -C extern/limine && ",
-            "cp ", kernel.getOutputPath(), " extern/limine/bin/limine{-eltorito-efi.bin,-cd.bin,.sys} limine.cfg ", img_dir, " && ",
+            "cp ",
+                "extern/limine/bin/limine-eltorito-efi.bin",
+                "extern/limine/bin/limine-cd.bin",
+                "extern/limine/bin/limine.sys",
+                "limine.cfg ",
+                img_dir, " && ",
             "cp extern/limine/bin/BOOTX64.EFI ", img_dir, "/EFI/BOOT/ && ",
-            "xorriso ",
-                "-as mkisofs ",
-                "-b limine-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table ",
-                "-part_like_isohybrid ",
-                "-eltorito-alt-boot -e limine-eltorito-efi.bin -no-emul-boot -isohybrid-gpt-basdat ",
+            "xorriso -as mkisofs -b limine-cd.bin ",
+                "-no-emul-boot -boot-load-size 4 -boot-info-table ",
+                "--efi-boot limine-eltorito-efi.bin ",
+                "-efi-boot-part --efi-boot-image --protective-msdos-label ",
                 img_dir, " -o ", image_path,
-            " && ",
             "extern/limine/bin/limine-install ", image_path, " && ",
             "true",
+            // zig fmt: on
         }) catch unreachable,
     };
 
     const image_step = b.addSystemCommand(cmd);
-    image_step.step.dependOn(&kernel.step);
+    image_step.step.dependOn(&kernel.install_step.?.step);
     b.default_step.dependOn(&image_step.step);
 
     const image_command = b.step("x86_64-universal-image", "Build the x86_64 universal (bios and uefi) image");

@@ -20,13 +20,16 @@ fn puts_terminal(term: stivale2.stivale2_struct_tag_terminal, str: []const u8) v
 }
 
 pub fn puts(str: []const u8) void {
-    if(stivale2_term) |term| puts_terminal(term, str);
+    if (stivale2_term) |term| puts_terminal(term, str);
 
-    for(str) |chr| {
-        if(stivale2_uart) |u| putchar_uart(u, chr);
+    for (str) |chr| {
+        if (stivale2_uart) |u| putchar_uart(u, chr);
 
-        if(comptime(std.builtin.arch == .x86_64)) {
-            asm volatile("outb %[value], $0xE9" :: [value] "{al}" (chr));
+        if (comptime (std.Target.current.cpu.arch == .x86_64)) {
+            asm volatile ("outb %[value], $0xE9"
+                :
+                : [value] "{al}" (chr)
+            );
         }
     }
 }
@@ -38,13 +41,11 @@ fn parse_tag(comptime T: type, tag: *align(1) stivale2.stivale2_tag) T {
 export fn _start(info: *align(1) stivale2.stivale2_struct) callconv(.C) noreturn {
     { // Parse tags
         var tag_opt = @intToPtr(?*align(1) stivale2.stivale2_tag, info.tags);
-        while(tag_opt) |tag| {
-            switch(tag.identifier) {
-                stivale2.STIVALE2_STRUCT_TAG_TERMINAL_ID =>
-                    stivale2_term = parse_tag(stivale2.stivale2_struct_tag_terminal, tag),
+        while (tag_opt) |tag| {
+            switch (tag.identifier) {
+                stivale2.STIVALE2_STRUCT_TAG_TERMINAL_ID => stivale2_term = parse_tag(stivale2.stivale2_struct_tag_terminal, tag),
 
-                stivale2.STIVALE2_STRUCT_TAG_MMIO32_UART =>
-                    stivale2_uart = parse_tag(stivale2.stivale2_struct_tag_mmio32_uart, tag),
+                stivale2.STIVALE2_STRUCT_TAG_MMIO32_UART => stivale2_uart = parse_tag(stivale2.stivale2_struct_tag_mmio32_uart, tag),
 
                 else => {}, // Ignore unknown tags
             }
