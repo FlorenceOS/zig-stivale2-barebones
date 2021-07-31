@@ -1,9 +1,9 @@
-[submodule "extern/limine"]
-	path = extern/limine
-	url = https://github.com/limine-bootloader/limine.git
 [submodule "extern/stivale"]
 	path = extern/stivale
 	url = https://github.com/stivale/stivale.git
 [submodule "extern/Sabaton"]
 	path = extern/Sabaton
 	url = https://github.com/FlorenceOS/Sabaton
+[submodule "extern/limine-bin"]
+	path = extern/limine-bin
+	url = https://github.com/limine-bootloader/limine.git

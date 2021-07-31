@@ -131,26 +131,29 @@ fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.bui
 fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path: []const u8) *std.build.RunStep {
     const img_dir = b.fmt("{s}/img_dir", .{b.cache_root});
 
+    const kernel_path = b.getInstallPath(kernel.install_step.?.dest_dir, kernel.out_filename);
+
     const cmd = &[_][]const u8{
         "/bin/sh", "-c",
         std.mem.concat(b.allocator, u8, &[_][]const u8{
             // zig fmt: off
             "rm ", image_path, " || true && ",
             "mkdir -p ", img_dir, "/EFI/BOOT && ",
-            "make -C extern/limine && ",
+            "make -C extern/limine-bin limine-install && ",
             "cp ",
-                "extern/limine/bin/limine-eltorito-efi.bin",
-                "extern/limine/bin/limine-cd.bin",
-                "extern/limine/bin/limine.sys",
+                "extern/limine-bin/limine-eltorito-efi.bin ",
+                "extern/limine-bin/limine-cd.bin ",
+                "extern/limine-bin/limine.sys ",
                 "limine.cfg ",
                 img_dir, " && ",
-            "cp extern/limine/bin/BOOTX64.EFI ", img_dir, "/EFI/BOOT/ && ",
+            "cp extern/limine-bin/BOOTX64.EFI ", img_dir, "/EFI/BOOT/ && ",
+            "cp ", kernel_path, " ", img_dir, " && ",
             "xorriso -as mkisofs -b limine-cd.bin ",
                 "-no-emul-boot -boot-load-size 4 -boot-info-table ",
                 "--efi-boot limine-eltorito-efi.bin ",
                 "-efi-boot-part --efi-boot-image --protective-msdos-label ",
-                img_dir, " -o ", image_path,
-            "extern/limine/bin/limine-install ", image_path, " && ",
+                img_dir, " -o ", image_path, " && ",
+            "extern/limine-bin/limine-install ", image_path, " && ",
             "true",
             // zig fmt: on
         }) catch unreachable,
