@@ -77,6 +77,13 @@ fn run_qemu_with_x86_bios_image(b: *Builder, image_path: []const u8) *std.build.
     return run_step;
 }
 
+fn get_ovmf(b: *Builder) ![]const u8 {
+    if (std.os.getenv("OVMF_PATH")) |p|
+        return p;
+
+    return "OVMF path not found - please set envvar OVMF_PATH";
+}
+
 fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.RunStep {
     const cmd = &[_][]const u8{
         // zig fmt: off
@@ -86,7 +93,7 @@ fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.
         "-vga", "virtio",
         "-m", "4G",
         "-machine", "q35,accel=kvm:whpx:tcg",
-        "-drive", b.fmt("if=pflash,format=raw,unit=0,file={s},readonly=on", .{std.os.getenv("OVMF_PATH").?}),
+        "-drive", b.fmt("if=pflash,format=raw,unit=0,file={s},readonly=on", .{get_ovmf(b)}),
         // zig fmt: on
     };
 
