@@ -3,11 +3,7 @@ const puts = @import("root").puts;
 
 fn spin() noreturn {
     while (true) {
-        switch (comptime (std.Target.current.cpu.arch)) {
-            .x86_64 => asm volatile ("pause"),
-            .aarch64 => asm volatile ("yield"),
-            else => {},
-        }
+        std.atomic.spinLoopHint();
     }
 }
 
