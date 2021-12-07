@@ -77,7 +77,7 @@ fn run_qemu_with_x86_bios_image(b: *Builder, image_path: []const u8) *std.build.
     return run_step;
 }
 
-fn get_ovmf(b: *Builder) ![]const u8 {
+fn get_ovmf(_: *Builder) ![]const u8 {
     if (std.os.getenv("OVMF_PATH")) |p|
         return p;
 
@@ -106,7 +106,8 @@ fn run_qemu_with_x86_uefi_image(b: *Builder, image_path: []const u8) *std.build.
 }
 
 fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.build.RunStep {
-    const bootloader = sabaton.build_blob(b, .aarch64, "virt", "extern/Sabaton/") catch unreachable;
+    const bootloader_blob = sabaton.aarch64VirtBlob(b);
+    const bootloader_path = b.getInstallPath(bootloader_blob.dest_dir, bootloader_blob.dest_filename);
 
     const kernel_path = b.getInstallPath(kernel.install_step.?.dest_dir, kernel.out_filename);
 
@@ -115,7 +116,7 @@ fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.bui
         "qemu-system-aarch64",
         "-M", "virt,accel=kvm:whpx:tcg,gic-version=3",
         "-cpu", "cortex-a57",
-        "-drive", b.fmt("if=pflash,format=raw,file={s},readonly=on", .{bootloader.output_path}),
+        "-drive", b.fmt("if=pflash,format=raw,file={s},readonly=on", .{bootloader_path}),
         "-fw_cfg", b.fmt("opt/Sabaton/kernel,file={s}", .{kernel_path}),
         "-m", "4G",
         "-serial", "stdio",
@@ -127,7 +128,7 @@ fn run_qemu_with_sabaton(b: *Builder, kernel: *std.build.LibExeObjStep) *std.bui
     const run_step = b.addSystemCommand(cmd);
 
     run_step.step.dependOn(&kernel.install_step.?.step);
-    run_step.step.dependOn(&bootloader.step);
+    run_step.step.dependOn(&bootloader_blob.step);
 
     const run_command = b.step("run-aarch64", "Run on aarch64 with Sabaton bootloader");
     run_command.dependOn(&run_step.step);

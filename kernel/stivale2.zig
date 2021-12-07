@@ -25,10 +25,10 @@ pub fn puts(str: []const u8) void {
     for (str) |chr| {
         if (stivale2_uart) |u| putchar_uart(u, chr);
 
-        if (comptime (std.Target.current.cpu.arch == .x86_64)) {
+        if (comptime (@import("builtin").target.cpu.arch == .x86_64)) {
             asm volatile ("outb %[value], $0xE9"
                 :
-                : [value] "{al}" (chr)
+                : [value] "{al}" (chr),
             );
         }
     }

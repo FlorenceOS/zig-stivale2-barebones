@@ -7,7 +7,7 @@ fn spin() noreturn {
     }
 }
 
-pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace) noreturn {
+pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace) noreturn {
     puts("PANIC!\n");
     puts(msg);
     spin();
