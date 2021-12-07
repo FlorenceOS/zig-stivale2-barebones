@@ -156,7 +156,7 @@ fn build_limine_image(b: *Builder, kernel: *std.build.LibExeObjStep, image_path:
                 img_dir, " && ",
             "cp extern/limine-bin/BOOTX64.EFI ", img_dir, "/EFI/BOOT/ && ",
             "cp ", kernel_path, " ", img_dir, " && ",
-            "xorriso -as mkisofs -b limine-cd.bin ",
+            "xorriso -as mkisofs -quiet -b limine-cd.bin ",
                 "-no-emul-boot -boot-load-size 4 -boot-info-table ",
                 "--efi-boot limine-eltorito-efi.bin ",
                 "-efi-boot-part --efi-boot-image --protective-msdos-label ",
